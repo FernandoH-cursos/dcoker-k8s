@@ -1,0 +1,81 @@
+#? 'configMapKeyRef' es un campo que se usa para referenciar una clave específica de un ConfigMap.  
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend-deployment
+  labels:
+    app: backend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      containers:
+      - name: backend
+        image: klerith/k8s-teslo-backend:1.1.0
+        ports:
+        - containerPort: 3000
+        env:
+          - name: APP_VERSION
+            value: "1.1.0"
+          - name: PORT
+            value: "3000"
+          - name: STAGE
+            value: "prod"
+          - name: DB_NAME
+            valueFrom:
+              configMapKeyRef: 
+                name: postgres-config
+                key: DB_NAME
+          - name: DB_HOST
+            valueFrom:
+              configMapKeyRef: 
+                name: postgres-config
+                key: DB_HOST
+          - name: DB_PORT
+            valueFrom:
+              configMapKeyRef: 
+                name: postgres-config
+                key: DB_PORT
+          - name: DB_USERNAME
+            valueFrom:
+              secretKeyRef: 
+                name: postgres-secrets
+                key: DB_USER
+          - name: DB_PASSWORD
+            valueFrom:
+              secretKeyRef: 
+                name: postgres-secrets
+                key: DB_PASSWORD
+          - name: JWT_SECRET
+            valueFrom:
+              secretKeyRef: 
+                name: backend-secrets
+                key: JWT_SECRET
+---
+#? 'port' es el puerto que se expondrá en el servicio. En este caso, el puerto 3000 del contenedor se expondrá en el servicio.
+#? 'targetPort' es el puerto al que se redirigirá el tráfico. En este caso, el puerto 3000 del contenedor se redirigirá al puerto 
+#? 30300 del nodo.
+#? 'nodePort' es el puerto que se expondrá en el nodo. En este caso, el puerto 30300 se expondrá en el nodo.
+#? Un nodo es una máquina virtual o física que forma parte de un clúster de Kubernetes. Es un servidor que
+#?  ejecuta los servicios de Kubernetes. 
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend-service
+spec:
+  type: NodePort
+  selector:
+    app: backend
+  ports:
+    - protocol: TCP
+      port: 3000 # cualquier puerto
+      targetPort: 3000
+      nodePort: 30300

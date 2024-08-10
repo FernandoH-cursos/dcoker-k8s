@@ -1,0 +1,78 @@
+#? 'kind' es el tipo de recurso que se creará. En este caso, un Deployment que se usará para implementar PostgreSQL.
+
+#? 'name' es el nombre del Deployment. Se usará para identificar el recurso.
+#?   'labels' es un objeto que contiene metadatos adicionales para el recurso. En este caso, se usará para identificar el recurso.
+
+#? 'spec' es un objeto que contiene la especificación del recurso.
+#?   'replicas' es el número de réplicas que se crearán para el recurso. En este caso, solo se creará una réplica.
+#?   'selector' es un objeto que contiene las etiquetas que se usarán para seleccionar los Pods que se administrarán con el Deployment.
+#?     'matchLabels' es un objeto que contiene las etiquetas que se usarán para seleccionar los Pods que se administrarán con 
+#?      el Deployment. En este caso, se seleccionarán los Pods con la etiqueta app: postgres.
+#?   'template' es un objeto que contiene la plantilla del Pod que se creará con el Deployment.
+#?     'metadata' es un objeto que contiene metadatos adicionales para el Pod. En este caso, se usará para identificar el Pod.
+
+#? 'spec' es un objeto que contiene la especificación del Pod.
+#?   'containers' es un objeto que contiene la configuración de los contenedores que se ejecutarán en el Pod.
+#?     'name' es el nombre del contenedor. Se usará para identificar el contenedor.
+#?     'image' es la imagen del contenedor que se ejecutará en el Pod. En este caso, se usará la imagen de PostgreSQL.
+#?     'ports' es un objeto que contiene la configuración de los puertos que se expondrán en el contenedor.
+#?       'containerPort' es el puerto que se expondrá en el contenedor. En este caso, es el puerto 5432 de PostgreSQL.
+#?     'env' es un objeto que contiene la configuración de las variables de entorno que se usarán en el contenedor.
+#?       'name' es el nombre de la variable de entorno. En este caso, se usará POSTGRES_PASSWORD.
+#?       'valueFrom' es un objeto que contiene la referencia a un recurso que se usará para obtener el valor de la variable de entorno.
+#?        'secretKeyRef' es un objeto que contiene la referencia a un Secret que se usará para obtener el valor de la variable de entorno.
+#?          'name' es el nombre del Secret que se usará para obtener el valor de la variable de entorno. 
+#?           En este caso, se usará postgres-secrets.
+#?          'key' es la clave del Secret que se usará para obtener el valor de la variable de entorno. 
+#?           En este caso, se usará DB_PASSWORD.
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres-deployment
+  labels:
+    app: postgres
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres
+  template:
+    metadata:
+      labels:
+        app: postgres
+    spec:
+      containers:
+      - name: postgres
+        image: postgres:15.1
+        ports:
+        - containerPort: 5432
+        env:
+          - name: POSTGRES_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: postgres-secrets
+                key: DB_PASSWORD
+---
+
+#? 'kind' es el tipo de recurso que se creará. En este caso, un Service que se usará para acceder a PostgreSQL.
+
+#? 'selector' es un objeto que contiene las etiquetas que se usarán para seleccionar los Pods que se administrarán con el Service.
+#?   'app: postgres' es la etiqueta que se usará para seleccionar los Pods que se administrarán con el Service.
+
+#? 'ports' es un objeto que contiene la configuración de los puertos que se expondrán en el Service.
+#?   'protocol' es el protocolo que se usará para exponer el puerto. En este caso, es TCP.
+#?   'port' es el puerto que se expondrá en el Service. En este caso, es el puerto 5432.
+#?   'targetPort' es el puerto al que se redirigirán las solicitudes que lleguen al puerto expuesto. En este caso, es el puerto 5432.
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-service
+spec:
+  selector:
+    app: postgres
+  ports:
+    - protocol: TCP
+      port: 5432
+      targetPort: 5432
